@@ -1,5 +1,12 @@
 import streamlit as st
+import sys
+import os
 import json
+
+# Ensure repo root is on sys.path
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
+# Import backend modules
 from invoice_qc.extractor import InvoiceExtractor
 from invoice_qc.validator import InvoiceValidator
 
@@ -7,55 +14,56 @@ st.set_page_config(page_title="Invoice QC Service", layout="wide")
 
 # --- HEADER ---
 st.title("📄 Invoice Quality Control Service")
-st.write("Upload PDF invoices → extract → validate → get summary report")
+st.write("Upload PDF invoices → extract → validate → view report")
 
-uploaded_file = st.file_uploader("Upload a PDF Invoice", type=["pdf"])
+# --- UPLOAD PDF ---
+uploaded_files = st.file_uploader(
+    "Upload one or more PDF invoices",
+    type=["pdf"],
+    accept_multiple_files=True
+)
 
-if uploaded_file:
-    st.success("PDF uploaded successfully!")
+if uploaded_files:
+    st.success(f"{len(uploaded_files)} file(s) uploaded successfully!")
 
-    # --- Extraction ---
-    st.header("🔍 Extraction Results")
-
-    loader = InvoiceLoader()
-
-    try:
-        extracted = loader.load_pdf(uploaded_file)
-
-        st.json(extracted)
-
-    except Exception as e:
-        st.error(f"Extraction failed: {e}")
-        st.stop()
-
-    st.divider()
-
-    # --- VALIDATION ---
-    st.header("📌 Validation Results")
-
+    extractor = InvoiceExtractor()
     validator = InvoiceValidator()
-    qc_report = validator.validate([extracted])
 
-    col1, col2 = st.columns(2)
+    invoices = []
 
-    with col1:
-        st.subheader("Invoice Validation")
-        st.json(qc_report["results"])
+    st.header("🔍 Extraction Results")
+    for file in uploaded_files:
+        try:
+            extracted_invoice = extractor.extract_single(file)
+            invoices.append(extracted_invoice.dict())
+            st.subheader(f"Invoice: {extracted_invoice.invoice_number}")
+            st.json(extracted_invoice.dict())
+        except Exception as e:
+            st.error(f"Extraction failed for {file.name}: {e}")
 
-    with col2:
-        st.subheader("Summary")
-        st.json(qc_report["summary"])
+    if invoices:
+        st.divider()
+        st.header("📌 Validation Results")
 
-    st.divider()
+        qc_report = validator.validate(invoices)
 
-    # --- DOWNLOAD REPORT ---
-    st.header("⬇️ Download QC Report")
+        col1, col2 = st.columns(2)
 
-    report_json = json.dumps(qc_report, indent=4)
+        with col1:
+            st.subheader("Per-Invoice Validation")
+            st.json(qc_report["results"])
 
-    st.download_button(
-        label="Download JSON Report",
-        data=report_json,
-        file_name="invoice_qc_report.json",
-        mime="application/json",
-    )
+        with col2:
+            st.subheader("Summary")
+            st.json(qc_report["summary"])
+
+        st.divider()
+        st.header("⬇️ Download QC Report")
+
+        report_json = json.dumps(qc_report, indent=4)
+        st.download_button(
+            label="Download JSON Report",
+            data=report_json,
+            file_name="invoice_qc_report.json",
+            mime="application/json"
+        )
