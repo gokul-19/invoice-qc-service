@@ -22,4 +22,3 @@ class Invoice(BaseModel):
     tax_amount: Optional[float]
     gross_total: Optional[float]
     line_items: List[LineItem] = []
-
