@@ -40,7 +40,6 @@ class InvoiceExtractor:
         return items
 
     def extract_single(self, pdf_file):
-        # pdf_file can be BytesIO from Streamlit upload
         with pdfplumber.open(pdf_file) as pdf:
             pages_text = "\n".join([p.extract_text() or "" for p in pdf.pages])
 
@@ -58,4 +57,3 @@ class InvoiceExtractor:
         data["line_items"] = self._extract_line_items(pages_text)
 
         return Invoice(**data)
-
