@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Invoice QC Result</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<div class="container">
+    <h1>Validation Result</h1>
+
+    <h2>Extracted Invoice Data</h2>
+    <pre>{{ invoice | tojson(indent=2) }}</pre>
+
+    <h2>Validator Output</h2>
+    <pre>{{ result | tojson(indent=2) }}</pre>
+
+    <a href="/" class="btn">Upload Another Invoice</a>
+</div>
+</body>
+</html>
